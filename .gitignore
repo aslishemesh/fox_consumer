@@ -1,0 +1,7 @@
+*.pyc
+.idea
+.DS_Store
+venv
+tests/.DS_Store
+fox_consumer/.DS_Store
+*.log
