@@ -1,5 +1,5 @@
 from nose.tools import *
-import fox_consumer
+from fox_consumer import FoxConsumer
 
 def setup():
     print "SETUP!"
@@ -9,4 +9,8 @@ def teardown():
 
 def test_basic():
     print "I RAN!"
+
+class TestFoxConsumer():
+    def setup(self):
+        self.fox_consumer = FoxConsumer
 

@@ -117,7 +117,12 @@ class FoxConsumer(object):
         self.postgress_connection = psycopg2.connect("dbname=mydb user=aslishemesh")
         # Open a cursor to perform database operations
         self.db_curser = self.postgress_connection.cursor()
-        try:
+
+        # verify if the table already exist
+        sql_query_table = "select exists(select * from information_schema.tables where table_name='fox_items');"
+        self.db_curser.execute(sql_query_table)
+        table_exist = self.db_curser.fetchone()[0]
+        if table_exist == False:
             self.db_curser.execute("CREATE TABLE fox_items ("
                                     "item_img_id varchar, "
                                     "item_main_category varchar, "
@@ -126,14 +131,6 @@ class FoxConsumer(object):
                                     "item_price real);")
             # Make the changes to the database persistent (allows us to see the DB update live in Postico)
             self.postgress_connection.commit()
-        except:
-            print "Oops!  Table already exist, no need to create..."
-            # close and reopen the DB
-            # TODO - need to search and change it to verify if the table exist
-            self.db_curser.close()
-            self.postgress_connection.close()
-            self.postgress_connection = psycopg2.connect("dbname=mydb user=aslishemesh")
-            self.db_curser = self.postgress_connection.cursor()
 
     def callback(self, method, properties, asd, body):
         """
@@ -198,5 +195,3 @@ class FoxConsumer(object):
         """
         self.db_curser.execute("SELECT * FROM fox_items WHERE item_img_id = (%s);", (item.item_img_id,))
         return False if self.db_curser.fetchone() == None else True
-
-
