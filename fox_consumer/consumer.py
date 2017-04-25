@@ -141,7 +141,7 @@ class FoxConsumer(object):
         every time the consumer recieve input it will verify it and add to the DB.
         :param body: input from rabbitmq server
         """
-        print(" [x] Received %r" % body)
+        print(" [x] Received %r" % body)    # TODO - will be deleted at the end...
 
         if self.verify_json(body):
             current_item = self.convert_json_to_fox_item(body)
@@ -181,18 +181,22 @@ class FoxConsumer(object):
         :param item: FoxItem object
         """
         if self.is_item_exist(item):
-            print "the item already exist..." # TODO - add update if exist
+            sql_update = "UPDATE fox_items SET item_main_category = %s, item_type = %s, item_name = %s, item_price = %s WHERE item_img_id = %s"
+            self.db_curser.execute(sql_update, (item.item_main_category, item.item_type, item.item_name, item.item_price, item.item_img_id))
+            self.postgress_connection.commit()
         else:
-            print item
-            self.db_curser.execute("INSERT INTO fox_items (item_img_id, item_main_category, item_type, item_name, item_price)"
-                        "VALUES (%s, %s, %s, %s, %s)",
-                        (item.item_img_id,
-                         item.item_main_category, item.item_type, item.item_name, item.item_price))
+            sql_insert = "INSERT INTO fox_items (item_img_id, item_main_category, item_type, item_name, item_price) VALUES (%s, %s, %s, %s, %s)"
+            self.db_curser.execute(sql_insert, (item.item_img_id, item.item_main_category, item.item_type, item.item_name, item.item_price))
             self.postgress_connection.commit()
 
     def is_item_exist(self, item):
-        self.db_curser.execute("SELECT * FROM fox_items WHERE item_img_id = %s;", (item.item_img_id,))
-        return True if self.db_curser.fetchone() == None else False
+        """
+        This function will verify if the item exist in DB
+        (using the primary-key - image url (item_image_id)
+        :param item: FoxItem
+        :return: True/False (exist/not)
+        """
+        self.db_curser.execute("SELECT * FROM fox_items WHERE item_img_id = (%s);", (item.item_img_id,))
+        return False if self.db_curser.fetchone() == None else True
 
-#
-cons = FoxConsumer()
+
