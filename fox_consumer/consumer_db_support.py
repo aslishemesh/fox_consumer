@@ -54,3 +54,21 @@ class FoxConsumerPostgres(object):
         """
         self.db_curser.execute("SELECT * FROM fox_items WHERE item_img_id = (%s);", (item.item_img_id,))
         return False if self.db_curser.fetchone() == None else True
+
+
+class ClassB(object):
+
+    def __init__(self):
+        self.class_b_var = "ASLI_B"
+        FoxConsumerPostgres.close_connections()
+
+    def method1_class_b(self):
+        print "run method1_class_b"
+        return True
+
+    def method2_class_b(self):
+        print "run method1_class_b from method2_class_b"
+        if self.method1_class_b() == True:
+            print "run method2_class_b"
+        else:
+            return False
