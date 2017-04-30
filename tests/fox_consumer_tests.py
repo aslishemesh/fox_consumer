@@ -1,16 +1,7 @@
-from nose.tools import *
-from fox_consumer import Consumer
+from fox_consumer import FoxConsumer
+from fox_consumer.consumer_db_support import FoxConsumerPostgres
+from mock import Mock, MagicMock, patch
+import unittest
 
-def setup():
-    print "SETUP!"
-
-def teardown():
-    print "TEAR DOWN!"
-
-def test_basic():
-    print "I RAN!"
-
-class TestFoxConsumer():
-    def setup(self):
-        self.fox_consumer = Consumer
-
+if __name__ == "__main__":
+    unittest.main()
