@@ -1,5 +1,5 @@
 from nose.tools import *
-from fox_consumer import FoxConsumer
+from fox_consumer import Consumer
 
 def setup():
     print "SETUP!"
@@ -12,5 +12,5 @@ def test_basic():
 
 class TestFoxConsumer():
     def setup(self):
-        self.fox_consumer = FoxConsumer
+        self.fox_consumer = Consumer
 

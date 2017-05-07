@@ -1,6 +1,6 @@
 import psycopg2
 
-class FoxConsumerPostgres(object):
+class PostgresWrapper(object):
     def __init__(self):
         """
         This function will initialize postgress database connection.
@@ -9,26 +9,20 @@ class FoxConsumerPostgres(object):
         # Connect to an existing database
         self.postgress_connection = psycopg2.connect("dbname=mydb user=aslishemesh")
         # Open a cursor to perform database operations
-        self.db_curser = self.postgress_connection.cursor()
+        self.db_cursor = self.postgress_connection.cursor()
 
         # verify if the table already exist
         sql_query_table = "select exists(select * from information_schema.tables where table_name='fox_items');"
-        self.db_curser.execute(sql_query_table)
-        table_exist = self.db_curser.fetchone()[0]
-        if table_exist == False:
-            self.db_curser.execute("CREATE TABLE fox_items ("
-                                    "item_img_id varchar, "
-                                    "item_main_category varchar, "
-                                    "item_type varchar, "
-                                    "item_name varchar, "
-                                    "item_price real);")
+        table_exist = self.execute_and_fetch_sql_query(sql_query_table)[0]
+        if not table_exist:
+            sql_query = "CREATE TABLE fox_items (" \
+                                    "item_img_id varchar, "\
+                                    "item_main_category varchar, "\
+                                    "item_type varchar, "\
+                                    "item_name varchar, "\
+                                    "item_price real);"
             # Make the changes to the database persistent (allows us to see the DB update live in Postico)
-            self.postgress_connection.commit()
-
-    def close_connections(self):
-        # TODO - Caduri - since it should run continuously, do we need this method?
-        self.db_curser.close()
-        self.postgress_connection.close()
+            self.execute_and_commit(sql_query)
 
     def save_item(self, item):
         """
@@ -37,13 +31,32 @@ class FoxConsumerPostgres(object):
         :param item: FoxItem object
         """
         if self.is_item_exist(item):
-            sql_update = "UPDATE fox_items SET item_main_category = %s, item_type = %s, item_name = %s, item_price = %s WHERE item_img_id = %s"
-            self.db_curser.execute(sql_update, (item.item_main_category, item.item_type, item.item_name, item.item_price, item.item_img_id))
-            self.postgress_connection.commit()
+            sql_query = "UPDATE fox_items " \
+                        "SET item_main_category = '%s', item_type = '%s', item_name = '%s', item_price = '%s' " \
+                        "WHERE item_img_id = '%s'" \
+                        % (item.item_main_category, item.item_type, item.item_name, item.item_price, item.item_img_id)
         else:
-            sql_insert = "INSERT INTO fox_items (item_img_id, item_main_category, item_type, item_name, item_price) VALUES (%s, %s, %s, %s, %s)"
-            self.db_curser.execute(sql_insert, (item.item_img_id, item.item_main_category, item.item_type, item.item_name, item.item_price))
-            self.postgress_connection.commit()
+            sql_query = "INSERT INTO fox_items (item_img_id, item_main_category, item_type, item_name, item_price) " \
+                         "VALUES ('%s', '%s', '%s', '%s', '%s')" \
+                        % (item.item_img_id, item.item_main_category, item.item_type, item.item_name, item.item_price)
+        self.execute_and_commit(sql_query)
+
+    def execute_and_commit(self, sql_query):
+        """
+        this function will receive an sql query execute it and commit the DB  
+        :param sql_query: string contain sql query
+        """
+        self.db_cursor.execute(sql_query)
+        self.postgress_connection.commit()
+
+    def execute_and_fetch_sql_query(self, sql_query):
+        """
+        this function will receive an sql query, execute it and return its answer
+        :param sql_query: string contain sql query
+        :return: sql response
+        """
+        self.db_cursor.execute(sql_query)
+        return self.db_cursor.fetchone()
 
     def is_item_exist(self, item):
         """
@@ -52,5 +65,6 @@ class FoxConsumerPostgres(object):
         :param item: FoxItem
         :return: True/False (exist/not)
         """
-        self.db_curser.execute("SELECT * FROM fox_items WHERE item_img_id = (%s);", (item.item_img_id,))
-        return False if self.db_curser.fetchone() == None else True
+        sql_query = "SELECT * FROM fox_items WHERE item_img_id = '%s';" % item.item_img_id
+        item_exist = self.execute_and_fetch_sql_query(sql_query)
+        return True if item_exist else False

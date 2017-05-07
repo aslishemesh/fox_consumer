@@ -1,3 +1,3 @@
 from fox_helper import FoxItem
-from consumer import FoxConsumer
-from consumer_db_support import FoxConsumerPostgres
+from consumer import Consumer
+from consumer_db_support import PostgresWrapper

@@ -1,3 +1,3 @@
-from fox_consumer import FoxConsumer
+from fox_consumer import Consumer
 
-cons = FoxConsumer()
+cons = Consumer()
