@@ -6,11 +6,14 @@ class PostgresWrapper(object):
         This function will initialize postgress database connection.
         it will connect to "mtdb" database and check if the "fox_item" table exist, id not it will create it.
         """
-        # Connect to an existing database
-        self.postgress_connection = psycopg2.connect("dbname=mydb user=aslishemesh")
-        # Open a cursor to perform database operations
-        self.db_cursor = self.postgress_connection.cursor()
-
+        try:
+            # Connect to an existing database
+            self.postgress_connection = psycopg2.connect("dbname=mydb user=aslishemesh")
+            # Open a cursor to perform database operations
+            self.db_cursor = self.postgress_connection.cursor()
+        except:
+            #self.close_connections("Cannot connect to postgres DB")
+            raise
         # verify if the table already exist
         sql_query_table = "select exists(select * from information_schema.tables where table_name='fox_items');"
         table_exist = self.execute_and_fetch_sql_query(sql_query_table)[0]
@@ -23,6 +26,12 @@ class PostgresWrapper(object):
                                     "item_price real);"
             # Make the changes to the database persistent (allows us to see the DB update live in Postico)
             self.execute_and_commit(sql_query)
+
+    def close_connections(self):
+        try:
+            self.postgress_connection.close()
+        except:
+            print " cannot close postgres connection"
 
     def save_item(self, item):
         """
@@ -46,17 +55,22 @@ class PostgresWrapper(object):
         this function will receive an sql query execute it and commit the DB  
         :param sql_query: string contain sql query
         """
-        self.db_cursor.execute(sql_query)
-        self.postgress_connection.commit()
-
+        try:
+            self.db_cursor.execute(sql_query)
+            self.postgress_connection.commit()
+        except:
+            self.close_connections("postgres exception")
     def execute_and_fetch_sql_query(self, sql_query):
         """
         this function will receive an sql query, execute it and return its answer
         :param sql_query: string contain sql query
         :return: sql response
         """
-        self.db_cursor.execute(sql_query)
-        return self.db_cursor.fetchone()
+        try:
+            self.db_cursor.execute(sql_query)
+            return self.db_cursor.fetchone()
+        except:
+            self.close_connections("postgres exception")
 
     def is_item_exist(self, item):
         """
@@ -68,3 +82,5 @@ class PostgresWrapper(object):
         sql_query = "SELECT * FROM fox_items WHERE item_img_id = '%s';" % item.item_img_id
         item_exist = self.execute_and_fetch_sql_query(sql_query)
         return True if item_exist else False
+
+

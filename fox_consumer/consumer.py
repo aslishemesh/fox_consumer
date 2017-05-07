@@ -1,5 +1,4 @@
 # coding=utf-8
-import psycopg2
 import pika
 from fox_helper import FoxItem
 import json
@@ -85,10 +84,28 @@ class Consumer(object):
                 "required": ["item_img_id", "item_main_category", "item_type", "item_name", "item_price"]
             }
 
-        self.consumer_db = PostgresWrapper()
-        self.initialize_rabbitmq_connection()
-        self.declare_queue()
-        self.start_consumer()
+        try:
+            self.consumer_db = PostgresWrapper()
+        except:
+            self.close_connections("Cannot connect to postgres server")
+        try:
+            self.initialize_rabbitmq_connection()
+            self.declare_queue()
+            self.start_consumer()
+        except:
+            self.close_connections("Cannot connect to rabbitmq server")
+
+    def close_connections(self, close_reason):
+        print "closing connections...."
+        print "reason -", close_reason
+        try:
+            self.rabbitmq_connection.close()
+        except:
+            print " cannot close rabbitmq connection"
+        try:
+            self.consumer_db.close_connections()
+        except:
+            print " cannot close postgres connection"
 
     def initialize_rabbitmq_connection(self):
         """
@@ -106,7 +123,15 @@ class Consumer(object):
         self.rabbitmq_channel.basic_consume(self.callback, queue=queue_name, no_ack=True)
 
     def start_consumer(self):
-        self.rabbitmq_channel.start_consuming()
+        """
+        start consumer (listening to rabbitmq)
+        """
+        try:
+            self.rabbitmq_channel.start_consuming()
+        except KeyboardInterrupt:
+            self.close_connections("User request")
+        except:
+            self.close_connections("Unknown error")
 
     def callback(self, method, properties, asd, body):
         """
