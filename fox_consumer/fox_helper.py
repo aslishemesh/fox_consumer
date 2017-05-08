@@ -5,6 +5,20 @@ class FoxItem(object):
     """
     The FoxItem class
     """
+    schema = {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "FoxItem",
+        "description": "An item for Fox catalog",
+        "type": "object",
+        "properties": {
+            "item_img_id": {"type": "string"},
+            "item_main_category": {"type": "string"},
+            "item_type": {"type": "string"},
+            "item_name": {"type": "string"},
+            "item_price": {"type": "number"},
+        },
+        "required": ["item_img_id", "item_main_category", "item_type", "item_name", "item_price"]
+    }
     def __init__(self, item_img_id, item_main_category, item_type, item_name, item_price):
         self.item_img_id = item_img_id
         self.item_main_category = item_main_category
@@ -35,7 +49,7 @@ class FoxItem(object):
         return TypeError
 
     @staticmethod
-    def verify_json(data, schema):
+    def verify_json(data):
         """
         Verify json input according to the schema defined for FoxItem class
         :param data: json input from rabbitmq server
@@ -43,10 +57,21 @@ class FoxItem(object):
         :return: True/False (verified/not)
         """
         try:
-            jsonschema.validate(json.loads(data), schema)
+            jsonschema.validate(json.loads(data), FoxItem.schema)
             return True
         except jsonschema.ValidationError as e:
             print e
         except jsonschema.SchemaError as e:
             print e
         return False
+
+    @staticmethod
+    def convert_json_to_fox_item(obj):
+        """
+        This function will convert the json to FoxItem class
+        :param obj: json object
+        :return: FoxItem object
+        """
+        item = json.loads(obj)
+        item = FoxItem(**item)
+        return item

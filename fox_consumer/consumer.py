@@ -1,8 +1,6 @@
 # coding=utf-8
-import psycopg2
 import pika
 from fox_helper import FoxItem
-import json
 from consumer_db_support import PostgresWrapper
 
 class Consumer(object):
@@ -69,20 +67,6 @@ class Consumer(object):
         """
         creation of Consumer
         """
-        self.schema = {
-                "$schema": "http://json-schema.org/draft-04/schema#",
-                "title": "FoxItem",
-                "description": "An item for Fox catalog",
-                "type": "object",
-                "properties": {
-                    "item_img_id": {"type": "string"},
-                    "item_main_category": {"type": "string"},
-                    "item_type": {"type": "string"},
-                    "item_name": {"type": "string"},
-                    "item_price": {"type": "number"},
-                },
-                "required": ["item_img_id", "item_main_category", "item_type", "item_name", "item_price"]
-            }
         self.rabbitmq_connection = None
         self.consumer_db = PostgresWrapper()
 
@@ -104,7 +88,7 @@ class Consumer(object):
         :return: 
         """
         print "closing connections...."
-        self.consumer_db.close_connections()
+        self.consumer_db.close_connection()
         if self.rabbitmq_connection and not self.rabbitmq_connection.is_closed:
             self.rabbitmq_connection.close()
 
@@ -135,18 +119,9 @@ class Consumer(object):
         every time the consumer recieve input it will verify it and add to the DB.
         :param body: input from rabbitmq server
         """
-        if FoxItem.verify_json(body, self.schema):
-            current_item = self.convert_json_to_fox_item(body)
+        if FoxItem.verify_json(body):
+            current_item = FoxItem.convert_json_to_fox_item(body)
             self.consumer_db.save_item(current_item)
         else:
             print "the input is corrupted..."
 
-    def convert_json_to_fox_item(self, obj):
-        """
-        This function will convert the json to FoxItem class
-        :param obj: json object
-        :return: FoxItem object
-        """
-        item = json.loads(obj)
-        item = FoxItem(**item)
-        return item
