@@ -1,3 +1,5 @@
+import jsonschema
+import json
 
 class FoxItem(object):
     """
@@ -31,3 +33,20 @@ class FoxItem(object):
                     and self.item_main_category == other.item_main_category
                     and self.item_type == other.item_type)
         return TypeError
+
+    @staticmethod
+    def verify_json(data, schema):
+        """
+        Verify json input according to the schema defined for FoxItem class
+        :param data: json input from rabbitmq server
+        :param schema: json schema for FoxItem class 
+        :return: True/False (verified/not)
+        """
+        try:
+            jsonschema.validate(json.loads(data), schema)
+            return True
+        except jsonschema.ValidationError as e:
+            print e
+        except jsonschema.SchemaError as e:
+            print e
+        return False

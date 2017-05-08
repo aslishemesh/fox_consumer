@@ -1,8 +1,8 @@
 # coding=utf-8
+import psycopg2
 import pika
 from fox_helper import FoxItem
 import json
-import jsonschema
 from consumer_db_support import PostgresWrapper
 
 class Consumer(object):
@@ -67,7 +67,7 @@ class Consumer(object):
     """
     def __init__(self):
         """
-        creation of Consumer (using the 'with' statement)
+        creation of Consumer
         """
         self.schema = {
                 "$schema": "http://json-schema.org/draft-04/schema#",
@@ -83,29 +83,30 @@ class Consumer(object):
                 },
                 "required": ["item_img_id", "item_main_category", "item_type", "item_name", "item_price"]
             }
+        self.rabbitmq_connection = None
+        self.consumer_db = PostgresWrapper()
 
-        try:
-            self.consumer_db = PostgresWrapper()
-        except:
-            self.close_connections("Cannot connect to postgres server")
+    def runner(self):
+        """
+        this will be the main function the consumer will run
+        """
         try:
             self.initialize_rabbitmq_connection()
-            self.declare_queue()
-            self.start_consumer()
-        except:
-            self.close_connections("Cannot connect to rabbitmq server")
+            self.consumer_db.runner()
+        except Exception as e:
+            print "Starting consumer failed"
+            raise e
+        self.start_consumer()
 
-    def close_connections(self, close_reason):
+    def close_connections(self):
+        """
+        close connections (postgres + rabbitmq servers)
+        :return: 
+        """
         print "closing connections...."
-        print "reason -", close_reason
-        try:
+        self.consumer_db.close_connections()
+        if self.rabbitmq_connection and not self.rabbitmq_connection.is_closed:
             self.rabbitmq_connection.close()
-        except:
-            print " cannot close rabbitmq connection"
-        try:
-            self.consumer_db.close_connections()
-        except:
-            print " cannot close postgres connection"
 
     def initialize_rabbitmq_connection(self):
         """
@@ -115,50 +116,30 @@ class Consumer(object):
         self.rabbitmq_connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
         self.rabbitmq_channel = self.rabbitmq_connection.channel()
         self.rabbitmq_channel.exchange_declare(exchange='fox_scrap', type='fanout')
-
-    def declare_queue(self):
-        result = self.rabbitmq_channel.queue_declare(exclusive=True)
-        queue_name = result.method.queue
-        self.rabbitmq_channel.queue_bind(exchange='fox_scrap', queue=queue_name, routing_key='')
-        self.rabbitmq_channel.basic_consume(self.callback, queue=queue_name, no_ack=True)
+        self.rabbitmq_channel.queue_declare(queue='fox_scrap_queue', exclusive=True)
+        self.rabbitmq_channel.queue_bind(exchange='fox_scrap', queue='fox_scrap_queue', routing_key='')
 
     def start_consumer(self):
         """
         start consumer (listening to rabbitmq)
         """
         try:
+            self.rabbitmq_channel.basic_consume(self.handle_message, queue='fox_scrap_queue', no_ack=True)
             self.rabbitmq_channel.start_consuming()
-        except KeyboardInterrupt:
-            self.close_connections("User request")
-        except:
-            self.close_connections("Unknown error")
+        except Exception as e:
+            raise
 
-    def callback(self, method, properties, asd, body):
+    def handle_message(self, method, properties, asd, body):
         """
         This is the "main" function for the Consumer.
         every time the consumer recieve input it will verify it and add to the DB.
         :param body: input from rabbitmq server
         """
-        if self.verify_json(body):
+        if FoxItem.verify_json(body, self.schema):
             current_item = self.convert_json_to_fox_item(body)
             self.consumer_db.save_item(current_item)
         else:
             print "the input is corrupted..."
-
-    def verify_json(self, data):
-        """
-        Verify json input according to the schema defined for FoxItem class
-        :param data: json input from rabbitmq server
-        :return: True/False (verified/not)
-        """
-        try:
-            jsonschema.validate(json.loads(data), self.schema)
-            return True
-        except jsonschema.ValidationError as e:
-            print e.message
-        except jsonschema.SchemaError as e:
-            print e
-        return False
 
     def convert_json_to_fox_item(self, obj):
         """
