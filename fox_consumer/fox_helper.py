@@ -1,11 +1,16 @@
 import jsonschema
 import json
 
+
 class FoxItem(object):
     """
     The FoxItem class
     """
     schema = {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "FoxItem",
+        "description": "An item for Fox catalog",
+        "type": "object",
         "properties": {
             "item_img_id": {"type": "string"},
             "item_main_category": {"type": "string"},
@@ -28,11 +33,11 @@ class FoxItem(object):
         convert the FoxItem into json supported type
         :return: a dictionary to support json dumps
         """
-        return {'item_main_category': self.item_main_category,
+        return {'item_img_id': self.item_img_id,
+                'item_main_category': self.item_main_category,
                 'item_type': self.item_type,
-                'item_img_id': self.item_img_id,
-                'item_price': self.item_price,
-                'item_name': self.item_name
+                'item_name': self.item_name,
+                'item_price': self.item_price
                 }
 
     def __eq__(self, other):
@@ -54,7 +59,8 @@ class FoxItem(object):
         :return: True/False (verified/not)
         """
         try:
-            jsonschema.validate(json.loads(data), FoxItem.schema)
+            json_data = json.loads(data)
+            jsonschema.validate(json_data, FoxItem.schema)
             return True
         except jsonschema.ValidationError as e:
             print e
@@ -72,8 +78,8 @@ class FoxItem(object):
         :return: FoxItem object
         """
         if FoxItem.verify_json(json_obj):
-            item = json.loads(json_obj)
-            item = FoxItem(**item)
+            json_item = json.loads(json_obj)
+            item = FoxItem(**json_item)
             return item
         else:
             raise Exception("Could not convert from json")
