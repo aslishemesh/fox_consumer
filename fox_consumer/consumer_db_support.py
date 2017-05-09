@@ -19,9 +19,6 @@ class PostgresWrapper(object):
             self.postgress_connection = psycopg2.connect("dbname=mydb user=aslishemesh")
             self.db_cursor = self.postgress_connection.cursor()
         except psycopg2.Error as e:
-            # ---Caduri--- - its not part of handle_exception method since
-            # I want it to be clear that the problem was with the postgres connection
-            # and yes I know - after your approve (or not) I will delete it :)
             print "PostgresWrapper - connect_to_postgres - exception:"
             raise
 
@@ -82,9 +79,9 @@ class PostgresWrapper(object):
         try:
             self.db_cursor.execute(sql_query)
             is_exist = self.db_cursor.fetchone()
-            if is_exist:    # check for table existence
-                is_exist = is_exist[0]
-            return True if is_exist else False
+            # check for table existence or for item existence
+            return True if is_exist and is_exist[0] else False
+
         except Exception as e:
             self.handle_postgres_general_exception(e)
 
@@ -121,8 +118,8 @@ class PostgresWrapper(object):
         elif isinstance(e, psycopg2.ProgrammingError):
             if e.pgcode == '42P01':
                 # do not raise - fix it locally - create a new table (need to restart the connection!)
-                print "PostgresWrapper - exception - 'unidentified_table'"
-                print "Reconnecting and creating table..."
+                print "PostgresWrapper - OperationalError exception('unidentified_table'):"
+                print "restarting connection and creating table"
                 self.restart_connection()
                 self.check_and_create_fox_table()
                 print "Error - last query did not applied !"
@@ -131,4 +128,7 @@ class PostgresWrapper(object):
                 raise
         elif isinstance(e, psycopg2.Error):
             print "PostgresWrapper - Error - exception:"
+            raise
+        else:
+            print "unidentified exception"
             raise

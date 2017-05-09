@@ -6,10 +6,6 @@ class FoxItem(object):
     The FoxItem class
     """
     schema = {
-        "$schema": "http://json-schema.org/draft-04/schema#",
-        "title": "FoxItem",
-        "description": "An item for Fox catalog",
-        "type": "object",
         "properties": {
             "item_img_id": {"type": "string"},
             "item_main_category": {"type": "string"},
@@ -19,6 +15,7 @@ class FoxItem(object):
         },
         "required": ["item_img_id", "item_main_category", "item_type", "item_name", "item_price"]
     }
+
     def __init__(self, item_img_id, item_main_category, item_type, item_name, item_price):
         self.item_img_id = item_img_id
         self.item_main_category = item_main_category
@@ -63,15 +60,20 @@ class FoxItem(object):
             print e
         except jsonschema.SchemaError as e:
             print e
+        except ValueError as e:
+            print e
         return False
 
     @staticmethod
-    def convert_json_to_fox_item(obj):
+    def from_json(json_obj):
         """
         This function will convert the json to FoxItem class
         :param obj: json object
         :return: FoxItem object
         """
-        item = json.loads(obj)
-        item = FoxItem(**item)
-        return item
+        if FoxItem.verify_json(json_obj):
+            item = json.loads(json_obj)
+            item = FoxItem(**item)
+            return item
+        else:
+            raise Exception("Could not convert from json")

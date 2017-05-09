@@ -10,7 +10,7 @@ def main():
     except ConnectionClosed as e:
         print "No rabbitmq server"
     except Exception as e:
-        cons.close_connections()
+        cons.close_connection()
         print "\nException cause:\n", e
 
 

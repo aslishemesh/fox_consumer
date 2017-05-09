@@ -82,7 +82,7 @@ class Consumer(object):
             raise e
         self.start_consumer()
 
-    def close_connections(self):
+    def close_connection(self):
         """
         close connections (postgres + rabbitmq servers)
         :return: 
@@ -119,9 +119,9 @@ class Consumer(object):
         every time the consumer recieve input it will verify it and add to the DB.
         :param body: input from rabbitmq server
         """
-        if FoxItem.verify_json(body):
-            current_item = FoxItem.convert_json_to_fox_item(body)
+        try:
+            current_item = FoxItem.from_json(body)
             self.consumer_db.save_item(current_item)
-        else:
-            print "the input is corrupted..."
+        except Exception as e:
+            print "the input is corrupted...\n", e
 
