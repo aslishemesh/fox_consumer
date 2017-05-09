@@ -15,7 +15,7 @@ class TestFoxConsumer(unittest.TestCase):
     @patch.object(Consumer, 'initialize_rabbitmq_connection')    # 'override' specific method in Consumer object
     @patch.object(Consumer, 'start_consumer')
     @patch.object(PostgresWrapper, 'runner')     # 'override' specific method in PostgresWrapper object
-    def test_runner(self, mock_runner, mock_start_consumer, mock_initialize_rabbitmq):
+    def test_runner_verify_calling_methods(self, mock_runner, mock_start_consumer, mock_initialize_rabbitmq):
         self.consumer.runner()
         self.assertEquals(mock_initialize_rabbitmq.called, True)
         self.assertEquals(mock_runner.called, True)

@@ -51,7 +51,7 @@ class FoxItem(object):
         return TypeError
 
     @staticmethod
-    def verify_json(data):
+    def verify_json(json_data):
         """
         Verify json input according to the schema defined for FoxItem class
         :param data: json input from rabbitmq server
@@ -59,7 +59,6 @@ class FoxItem(object):
         :return: True/False (verified/not)
         """
         try:
-            json_data = json.loads(data)
             jsonschema.validate(json_data, FoxItem.schema)
             return True
         except jsonschema.ValidationError as e:
@@ -74,12 +73,13 @@ class FoxItem(object):
     def from_json(json_obj):
         """
         This function will convert the json to FoxItem class
-        :param obj: json object
+        :param json_obj: json string object
         :return: FoxItem object
         """
-        if FoxItem.verify_json(json_obj):
+        try:
             json_item = json.loads(json_obj)
-            item = FoxItem(**json_item)
-            return item
-        else:
+            if FoxItem.verify_json(json_item):
+                item = FoxItem(**json_item)
+                return item
+        except Exception as e:
             raise Exception("Could not convert from json")

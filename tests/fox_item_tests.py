@@ -11,7 +11,7 @@ class TestFoxItem(unittest.TestCase):
 
     def test_verify_valid_json(self):
         json_data = self.fox_item.to_json()
-        self.assertEquals(FoxItem.verify_json(json.dumps(json_data)), True)
+        self.assertEquals(FoxItem.verify_json(json_data), True)
 
     def test_from_json(self):
         json_data = self.fox_item.to_json()
