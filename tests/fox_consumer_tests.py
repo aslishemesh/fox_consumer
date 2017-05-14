@@ -8,8 +8,7 @@ import json
 import sys
 
 class TestFoxConsumer(unittest.TestCase):
-    @patch('fox_consumer.PostgresWrapper')          # 'override' the entire object
-    def setUp(self, mock_postgres):
+    def setUp(self):
         self.consumer = Consumer()
 
     @patch.object(Consumer, 'initialize_rabbitmq_connection')    # 'override' specific method in Consumer object
