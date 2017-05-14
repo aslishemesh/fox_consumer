@@ -124,4 +124,3 @@ class Consumer(object):
             self.consumer_db.save_item(current_item)
         except Exception as e:
             print "the input is corrupted...\n", e
-
